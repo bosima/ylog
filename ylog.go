@@ -66,7 +66,7 @@ func createFile(path *string, t *time.Time) (file *os.File, err error) {
 }
 
 var stdPath = "logs"
-var std = NewFileLogger(ForInfo, &stdPath)
+var std = NewFileLogger(ToInfo, &stdPath)
 
 func SetLevel(level LogLevel) {
 	std.SetLevel(level)
@@ -147,7 +147,7 @@ func (l *FileLogger) CanDebug() bool {
 }
 
 func (l *FileLogger) CanInfo() bool {
-	return l.Level >= ToTrace
+	return l.Level >= ToInfo
 }
 
 func (l *FileLogger) CanWarn() bool {
@@ -195,7 +195,7 @@ func (l *FileLogger) Warn(v ...any) {
 }
 
 func (l *FileLogger) Error(v ...any) {
-	if l.CanTrace() {
+	if l.CanError() {
 		l.ensureFile()
 		v[0] = "[Error] " + toString(v[0])
 		l.iLogger.Output(3, fmt.Sprintln(v...))
