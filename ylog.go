@@ -139,27 +139,27 @@ func (l *FileLogger) SetLevel(level LogLevel) {
 }
 
 func (l *FileLogger) CanTrace() bool {
-	return l.Level >= ToTrace
+	return l.Level <= ToTrace
 }
 
 func (l *FileLogger) CanDebug() bool {
-	return l.Level >= ToDebug
+	return l.Level <= ToDebug
 }
 
 func (l *FileLogger) CanInfo() bool {
-	return l.Level >= ToInfo
+	return l.Level <= ToInfo
 }
 
 func (l *FileLogger) CanWarn() bool {
-	return l.Level >= ToWarn
+	return l.Level <= ToWarn
 }
 
 func (l *FileLogger) CanError() bool {
-	return l.Level >= ToError
+	return l.Level <= ToError
 }
 
 func (l *FileLogger) CanFatal() bool {
-	return l.Level >= ToFatal
+	return l.Level <= ToFatal
 }
 
 func (l *FileLogger) Trace(v ...any) {
