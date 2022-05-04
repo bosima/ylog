@@ -2,6 +2,7 @@ package ylog
 
 var std = NewFileLogger(
 	Level(LevelInfo),
+	CacheSize(3),
 	Path("logs"),
 )
 

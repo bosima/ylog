@@ -7,7 +7,7 @@ She writes data to disk file, which are divided by hours.
 
 ## Settings
 
-    ylog.SetLevel(ylog.ToTrace)
+    ylog.SetLevel(ylog.LevelTrace)
 
 ## Write Log
 
