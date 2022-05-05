@@ -21,13 +21,13 @@ const (
 	LevelFatal
 )
 
-var levelMap map[LogLevel]string = map[LogLevel]string{
-	LevelTrace: "Trace",
-	LevelDebug: "Debug",
-	LevelInfo:  "Info",
-	LevelWarn:  "Wran",
-	LevelError: "Error",
-	LevelFatal: "Fatal",
+var levelMap map[LogLevel][]byte = map[LogLevel][]byte{
+	LevelTrace: []byte("Trace"),
+	LevelDebug: []byte("Debug"),
+	LevelInfo:  []byte("Info"),
+	LevelWarn:  []byte("Warn"),
+	LevelError: []byte("Error"),
+	LevelFatal: []byte("Fatal"),
 }
 
 type Logger interface {
@@ -52,11 +52,11 @@ type FileLogger struct {
 }
 
 type logEntry struct {
-	Ts      *time.Time
-	Content *string
-	File    *string
-	Line    *int
-	Level   *LogLevel
+	Ts    *time.Time
+	Msg   *string
+	File  *string
+	Line  *int
+	Level *LogLevel
 }
 
 func NewFileLogger(opts ...Option) (logger *FileLogger) {
@@ -161,11 +161,11 @@ func (l *FileLogger) send(calldepth int, level LogLevel, s string) {
 	}
 
 	entry := &logEntry{
-		Level:   &level,
-		Content: &s,
-		File:    &file,
-		Line:    &line,
-		Ts:      &now,
+		Level: &level,
+		Msg:   &s,
+		File:  &file,
+		Line:  &line,
+		Ts:    &now,
 	}
 
 	l.pipe <- entry
@@ -188,7 +188,7 @@ func (l *FileLogger) write() {
 			buf = append(buf, getLevelName(*entry.Level)...)
 			buf = append(buf, ' ')
 
-			buf = append(buf, *entry.Content...)
+			buf = append(buf, *entry.Msg...)
 
 			_, err := l.file.Write(buf)
 			if err != nil {
@@ -302,10 +302,10 @@ func createFile(path *string, t *time.Time) (file *os.File, err error) {
 	return
 }
 
-func getLevelName(level LogLevel) string {
+func getLevelName(level LogLevel) []byte {
 	if levelName, ok := levelMap[level]; ok {
 		return levelName
 	}
 
-	return ""
+	return []byte{}
 }
