@@ -1,6 +1,7 @@
 package ylog
 
 import (
+	"runtime"
 	"testing"
 	"time"
 )
@@ -10,15 +11,17 @@ func BenchmarkInfo(b *testing.B) {
 	var logger = NewFileLogger(
 		Level(LevelInfo),
 		Path(stdPath),
-		CacheSize(12),
+		CacheSize(uint16(runtime.NumCPU())),
 	)
 	logger.Info("Ready")
-	<-time.After(time.Second * 2)
+	<-time.After(time.Second)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		logger.Info("This is a Benchmark info.")
 	}
+	b.StopTimer()
+	<-time.After(time.Second)
 }
 
 func BenchmarkInfo_Parallel(b *testing.B) {
@@ -26,10 +29,10 @@ func BenchmarkInfo_Parallel(b *testing.B) {
 	var logger = NewFileLogger(
 		Level(LevelInfo),
 		Path(stdPath),
-		CacheSize(12),
+		CacheSize(uint16(runtime.NumCPU())),
 	)
 	logger.Info("Ready")
-	<-time.After(time.Second * 2)
+	<-time.After(time.Second)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -37,4 +40,6 @@ func BenchmarkInfo_Parallel(b *testing.B) {
 			logger.Info("This is a Benchmark info.")
 		}
 	})
+	b.StopTimer()
+	<-time.After(time.Second)
 }

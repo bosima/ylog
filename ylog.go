@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type LogLevel int
+type LogLevel = byte
 
 const (
 	LevelTrace LogLevel = iota
@@ -20,15 +20,6 @@ const (
 	LevelError
 	LevelFatal
 )
-
-var levelMap map[LogLevel][]byte = map[LogLevel][]byte{
-	LevelTrace: []byte("Trace"),
-	LevelDebug: []byte("Debug"),
-	LevelInfo:  []byte("Info"),
-	LevelWarn:  []byte("Warn"),
-	LevelError: []byte("Error"),
-	LevelFatal: []byte("Fatal"),
-}
 
 type Logger interface {
 	Trace(format string, v ...any)
@@ -52,12 +43,14 @@ type FileLogger struct {
 }
 
 type logEntry struct {
-	Ts    *time.Time
-	Msg   *string
-	File  *string
-	Line  *int
-	Level *LogLevel
+	Ts    time.Time
+	Msg   string
+	File  string
+	Line  int
+	Level LogLevel
 }
+
+type formatLevelFunc func(buf *[]byte)
 
 func NewFileLogger(opts ...Option) (logger *FileLogger) {
 	logger = &FileLogger{}
@@ -161,11 +154,11 @@ func (l *FileLogger) send(calldepth int, level LogLevel, s string) {
 	}
 
 	entry := &logEntry{
-		Level: &level,
-		Msg:   &s,
-		File:  &file,
-		Line:  &line,
-		Ts:    &now,
+		Level: level,
+		Msg:   s,
+		File:  file,
+		Line:  line,
+		Ts:    now,
 	}
 
 	l.pipe <- entry
@@ -176,19 +169,19 @@ func (l *FileLogger) write() {
 	for {
 		select {
 		case entry := <-l.pipe:
-			l.ensureFile(entry.Ts)
+			l.ensureFile(&entry.Ts)
 
 			buf = buf[:0]
-			formatTime(&buf, *entry.Ts)
+			formatTime(&buf, entry.Ts)
 			buf = append(buf, ' ')
 
-			formatFile(&buf, *entry.File, *entry.Line)
+			formatFile(&buf, entry.File, entry.Line)
 			buf = append(buf, ' ')
 
-			buf = append(buf, getLevelName(*entry.Level)...)
+			buf = append(buf, getLevelName(entry.Level)...)
 			buf = append(buf, ' ')
 
-			buf = append(buf, *entry.Msg...)
+			buf = append(buf, entry.Msg...)
 
 			_, err := l.file.Write(buf)
 			if err != nil {
@@ -302,10 +295,21 @@ func createFile(path *string, t *time.Time) (file *os.File, err error) {
 	return
 }
 
-func getLevelName(level LogLevel) []byte {
-	if levelName, ok := levelMap[level]; ok {
-		return levelName
+func getLevelName(level LogLevel) string {
+	switch level {
+	case LevelTrace:
+		return "Trace"
+	case LevelDebug:
+		return "Debug"
+	case LevelInfo:
+		return "Info"
+	case LevelWarn:
+		return "Warn"
+	case LevelError:
+		return "Error"
+	case LevelFatal:
+		return "Fatal"
+	default:
+		return ""
 	}
-
-	return []byte{}
 }

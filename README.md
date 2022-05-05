@@ -20,5 +20,5 @@ She writes data to disk file, which are divided by hours.
     goarch: amd64
     pkg: github.com/bosima/ylog
     cpu: Intel(R) Core(TM) i5-10400F CPU @ 2.90GHz
-    BenchmarkInfo-12             	  365077	      3073 ns/op	     368 B/op	       9 allocs/op
-    BenchmarkInfo_Parallel-12    	  368134	      3170 ns/op	     368 B/op	       9 allocs/op
+    BenchmarkInfo-12             	  370978	      3040 ns/op	     328 B/op	       4 allocs/op
+    BenchmarkInfo_Parallel-12    	  362824	      3160 ns/op	     328 B/op	       4 allocs/op
