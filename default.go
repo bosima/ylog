@@ -1,8 +1,10 @@
 package ylog
 
+import "runtime"
+
 var std = NewFileLogger(
 	Level(LevelInfo),
-	CacheSize(3),
+	CacheSize(uint16(runtime.NumCPU())),
 	Path("logs"),
 )
 
