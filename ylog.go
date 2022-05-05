@@ -154,8 +154,7 @@ func (l *FileLogger) send(calldepth int, level LogLevel, s string) {
 	var line int
 
 	// todo: layout
-	var ok bool
-	_, file, line, ok = runtime.Caller(calldepth)
+	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
 		file = "???"
 		line = 0
