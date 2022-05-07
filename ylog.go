@@ -21,6 +21,16 @@ const (
 	LevelFatal
 )
 
+// Reference: https://github.com/golang/glog/blob/9ef845f417d839250ceabbc25c1b26101e772dd7/glog.go#L110
+var levelName = []string{
+	LevelTrace: "Trace",
+	LevelDebug: "Debug",
+	LevelInfo:  "Info",
+	LevelWarn:  "Warn",
+	LevelError: "Error",
+	LevelFatal: "Fatal",
+}
+
 type Logger interface {
 	Trace(format string, v ...any)
 	Debug(format string, v ...any)
@@ -50,8 +60,6 @@ type logEntry struct {
 	Level LogLevel
 }
 
-type formatLevelFunc func(buf *[]byte)
-
 func NewFileLogger(opts ...Option) (logger *FileLogger) {
 	logger = &FileLogger{}
 	logger.Path = "logs"
@@ -71,6 +79,13 @@ func NewFileLogger(opts ...Option) (logger *FileLogger) {
 
 func (l *FileLogger) Close() {
 	close(l.exit)
+	l.Sync()
+}
+
+func (l *FileLogger) Sync() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.file.Sync()
 }
 
 func (l *FileLogger) SetLevel(level LogLevel) {
@@ -171,6 +186,7 @@ func (l *FileLogger) write() {
 		case entry := <-l.pipe:
 			l.ensureFile(&entry.Ts)
 
+			// resue the slice memory
 			buf = buf[:0]
 			formatTime(&buf, entry.Ts)
 			buf = append(buf, ' ')
@@ -178,7 +194,7 @@ func (l *FileLogger) write() {
 			formatFile(&buf, entry.File, entry.Line)
 			buf = append(buf, ' ')
 
-			buf = append(buf, getLevelName(entry.Level)...)
+			buf = append(buf, levelName[entry.Level]...)
 			buf = append(buf, ' ')
 
 			buf = append(buf, entry.Msg...)
@@ -194,6 +210,7 @@ func (l *FileLogger) write() {
 	}
 }
 
+// from log/log.go in standard library
 func formatFile(buf *[]byte, file string, line int) {
 	short := file
 	for i := len(file) - 1; i > 0; i-- {
@@ -234,6 +251,7 @@ func (l *FileLogger) ensureFile(curTime *time.Time) (err error) {
 	return
 }
 
+// from log/log.go in standard library
 func formatTime(buf *[]byte, t time.Time) {
 	year, month, day := t.Date()
 	itoa(buf, year, 4)
@@ -293,23 +311,4 @@ func createFile(path *string, t *time.Time) (file *os.File, err error) {
 	}
 
 	return
-}
-
-func getLevelName(level LogLevel) string {
-	switch level {
-	case LevelTrace:
-		return "Trace"
-	case LevelDebug:
-		return "Debug"
-	case LevelInfo:
-		return "Info"
-	case LevelWarn:
-		return "Warn"
-	case LevelError:
-		return "Error"
-	case LevelFatal:
-		return "Fatal"
-	default:
-		return ""
-	}
 }
