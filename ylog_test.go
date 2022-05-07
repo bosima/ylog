@@ -1,6 +1,7 @@
 package ylog
 
 import (
+	"io/ioutil"
 	"runtime"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ func BenchmarkInfo(b *testing.B) {
 		Level(LevelInfo),
 		Path(stdPath),
 		CacheSize(uint16(runtime.NumCPU())),
+		Writer(&discardWriter{}),
 	)
 	logger.Info("Ready")
 	<-time.After(time.Second)
@@ -20,9 +22,6 @@ func BenchmarkInfo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		logger.Info("This is a Benchmark info.")
 	}
-	b.StopTimer()
-	<-time.After(time.Second)
-	logger.Sync()
 }
 
 func BenchmarkInfo_Parallel(b *testing.B) {
@@ -31,6 +30,7 @@ func BenchmarkInfo_Parallel(b *testing.B) {
 		Level(LevelInfo),
 		Path(stdPath),
 		CacheSize(uint16(runtime.NumCPU())),
+		Writer(&discardWriter{}),
 	)
 	logger.Info("Ready")
 	<-time.After(time.Second)
@@ -41,7 +41,20 @@ func BenchmarkInfo_Parallel(b *testing.B) {
 			logger.Info("This is a Benchmark info.")
 		}
 	})
-	b.StopTimer()
-	<-time.After(time.Second)
-	logger.Sync()
+}
+
+// all Write calls succeed without doing anything.
+type discardWriter struct {
+}
+
+func (w *discardWriter) Ensure(curTime time.Time) (err error) {
+	return
+}
+
+func (w *discardWriter) Write(buf []byte) (int, error) {
+	return ioutil.Discard.Write(buf)
+}
+
+func (w *discardWriter) Sync() error {
+	return nil
 }

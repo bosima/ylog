@@ -28,3 +28,9 @@ func Layout(layout string) Option {
 		logger.Layout = layout
 	}
 }
+
+func Writer(writer LoggerWriter) Option {
+	return func(logger *FileLogger) {
+		logger.writer = writer
+	}
+}

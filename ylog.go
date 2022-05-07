@@ -3,10 +3,7 @@ package ylog
 import (
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"runtime"
-	"sync"
 	"time"
 )
 
@@ -32,23 +29,22 @@ var levelName = []string{
 }
 
 type Logger interface {
-	Trace(format string, v ...any)
-	Debug(format string, v ...any)
-	Info(format string, v ...any)
-	Warn(format string, v ...any)
-	Error(format string, v ...any)
-	Fatal(format string, v ...any)
+	Trace(v ...any)
+	Debug(v ...any)
+	Info(v ...any)
+	Warn(v ...any)
+	Error(v ...any)
+	Fatal(v ...any)
 }
 
 type FileLogger struct {
 	Level     LogLevel
-	Path      string
-	lastHour  int64
-	file      *os.File
-	mu        sync.Mutex
 	pipe      chan *logEntry
 	cacheSize uint16
 	Layout    string
+	Path      string
+	writer    LoggerWriter
+	sync      chan struct{}
 	exit      chan struct{}
 }
 
@@ -64,13 +60,13 @@ func NewFileLogger(opts ...Option) (logger *FileLogger) {
 	logger = &FileLogger{}
 	logger.Path = "logs"
 	logger.pipe = make(chan *logEntry)
+	logger.writer = &fileWriter{Path: logger.Path}
 
 	for _, opt := range opts {
 		opt(logger)
 	}
 
-	// todo: Layout
-
+	logger.sync = make(chan struct{})
 	logger.exit = make(chan struct{})
 	go logger.write()
 
@@ -79,13 +75,10 @@ func NewFileLogger(opts ...Option) (logger *FileLogger) {
 
 func (l *FileLogger) Close() {
 	close(l.exit)
-	l.Sync()
 }
 
 func (l *FileLogger) Sync() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.file.Sync()
+	close(l.sync)
 }
 
 func (l *FileLogger) SetLevel(level LogLevel) {
@@ -184,7 +177,7 @@ func (l *FileLogger) write() {
 	for {
 		select {
 		case entry := <-l.pipe:
-			l.ensureFile(&entry.Ts)
+			l.writer.Ensure(entry.Ts)
 
 			// resue the slice memory
 			buf = buf[:0]
@@ -199,10 +192,15 @@ func (l *FileLogger) write() {
 
 			buf = append(buf, entry.Msg...)
 
-			_, err := l.file.Write(buf)
+			_, err := l.writer.Write(buf)
 			if err != nil {
 				// todo: write to ylog.txt
 				log.Println(err)
+			}
+		case _, ok := <-l.sync:
+			if ok {
+				l.writer.Sync()
+				l.sync = make(chan struct{})
 			}
 		case <-l.exit:
 			return
@@ -224,36 +222,7 @@ func formatFile(buf *[]byte, file string, line int) {
 
 	*buf = append(*buf, file...)
 	*buf = append(*buf, ':')
-	if line < 256 {
-		*buf = append(*buf, byte(line))
-	} else {
-		itoa(buf, line, -1)
-	}
-}
-
-func (l *FileLogger) ensureFile(curTime *time.Time) (err error) {
-	if l.file == nil {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-		if l.file == nil {
-			l.file, err = createFile(&l.Path, curTime)
-			l.lastHour = getTimeHour(curTime)
-		}
-		return
-	}
-
-	currentHour := getTimeHour(curTime)
-	if l.lastHour != currentHour {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-		if l.lastHour != currentHour {
-			_ = l.file.Close()
-			l.file, err = createFile(&l.Path, curTime)
-			l.lastHour = getTimeHour(curTime)
-		}
-	}
-
-	return
+	itoa(buf, line, -1)
 }
 
 // from log/log.go in standard library
@@ -292,28 +261,10 @@ func itoa(buf *[]byte, i int, wid int) {
 	*buf = append(*buf, b[bp:]...)
 }
 
-func getTimeHour(t *time.Time) int64 {
+func getTimeHour(t time.Time) int64 {
 	return t.Unix() / 3600
 }
 
-func getFileName(t *time.Time) string {
+func getFileName(t time.Time) string {
 	return t.Format("2006-01-02_15")
-}
-
-func createFile(path *string, t *time.Time) (file *os.File, err error) {
-	dir := filepath.Join(*path, t.Format("200601"))
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0766) // for mac 766, for windows 666
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	filePath := filepath.Join(dir, getFileName(t)+".txt")
-	file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return
-	}
-
-	return
 }

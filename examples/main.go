@@ -9,7 +9,7 @@ import (
 
 func main() {
 	logger := ylog.NewFileLogger(
-		ylog.CacheSize(1024),
+		ylog.CacheSize(24),
 		ylog.Level(ylog.LevelInfo),
 	)
 
@@ -21,14 +21,20 @@ func main() {
 	logger.Fatal("This is a fatal log.")
 
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 10000; i++ {
 			logger.Info("loop info log.")
 		}
 	}()
 
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 10000; i++ {
 			logger.Warn("loop warn log.")
+		}
+	}()
+
+	go func() {
+		for i := 0; i < 10000; i++ {
+			logger.Error("loop error log.")
 		}
 	}()
 
