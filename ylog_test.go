@@ -22,6 +22,7 @@ func BenchmarkInfo(b *testing.B) {
 	}
 	b.StopTimer()
 	<-time.After(time.Second)
+	logger.Sync()
 }
 
 func BenchmarkInfo_Parallel(b *testing.B) {
@@ -42,4 +43,5 @@ func BenchmarkInfo_Parallel(b *testing.B) {
 	})
 	b.StopTimer()
 	<-time.After(time.Second)
+	logger.Sync()
 }

@@ -212,6 +212,7 @@ func (l *FileLogger) write() {
 
 // from log/log.go in standard library
 func formatFile(buf *[]byte, file string, line int) {
+	// todo reuse filename
 	short := file
 	for i := len(file) - 1; i > 0; i-- {
 		if file[i] == '/' {
@@ -223,7 +224,11 @@ func formatFile(buf *[]byte, file string, line int) {
 
 	*buf = append(*buf, file...)
 	*buf = append(*buf, ':')
-	itoa(buf, line, -1)
+	if line < 256 {
+		*buf = append(*buf, byte(line))
+	} else {
+		itoa(buf, line, -1)
+	}
 }
 
 func (l *FileLogger) ensureFile(curTime *time.Time) (err error) {
