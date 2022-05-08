@@ -2,10 +2,9 @@ package ylog
 
 import "runtime"
 
-var std = NewFileLogger(
+var std = NewYesLogger(
 	Level(LevelInfo),
 	CacheSize(uint16(runtime.NumCPU())),
-	Path("logs"),
 )
 
 func SetLevel(level LogLevel) {

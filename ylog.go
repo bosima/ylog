@@ -18,7 +18,6 @@ const (
 	LevelFatal
 )
 
-// Reference: https://github.com/golang/glog/blob/9ef845f417d839250ceabbc25c1b26101e772dd7/glog.go#L110
 var levelName = []string{
 	LevelTrace: "Trace",
 	LevelDebug: "Debug",
@@ -37,13 +36,12 @@ type Logger interface {
 	Fatal(v ...any)
 }
 
-type FileLogger struct {
+type YesLogger struct {
 	Level     LogLevel
+	writer    LoggerWriter
+	formatter LoggerFormatter
 	pipe      chan *logEntry
 	cacheSize uint16
-	Layout    string
-	Path      string
-	writer    LoggerWriter
 	sync      chan struct{}
 	exit      chan struct{}
 }
@@ -56,11 +54,11 @@ type logEntry struct {
 	Level LogLevel
 }
 
-func NewFileLogger(opts ...Option) (logger *FileLogger) {
-	logger = &FileLogger{}
-	logger.Path = "logs"
+func NewYesLogger(opts ...Option) (logger *YesLogger) {
+	logger = &YesLogger{}
 	logger.pipe = make(chan *logEntry)
-	logger.writer = &fileWriter{Path: logger.Path}
+	logger.writer = NewFileWriter("logs")
+	logger.formatter = NewTextFormatter()
 
 	for _, opt := range opts {
 		opt(logger)
@@ -73,88 +71,87 @@ func NewFileLogger(opts ...Option) (logger *FileLogger) {
 	return
 }
 
-func (l *FileLogger) Close() {
+func (l *YesLogger) Close() {
 	close(l.exit)
 }
 
-func (l *FileLogger) Sync() {
+func (l *YesLogger) Sync() {
 	close(l.sync)
 }
 
-func (l *FileLogger) SetLevel(level LogLevel) {
+func (l *YesLogger) SetLevel(level LogLevel) {
 	l.Level = level
 }
 
-func (l *FileLogger) GetLevel() LogLevel {
+func (l *YesLogger) GetLevel() LogLevel {
 	return l.Level
 }
 
-func (l *FileLogger) CanTrace() bool {
+func (l *YesLogger) CanTrace() bool {
 	return l.Level <= LevelTrace
 }
 
-func (l *FileLogger) CanDebug() bool {
+func (l *YesLogger) CanDebug() bool {
 	return l.Level <= LevelDebug
 }
 
-func (l *FileLogger) CanInfo() bool {
+func (l *YesLogger) CanInfo() bool {
 	return l.Level <= LevelInfo
 }
 
-func (l *FileLogger) CanWarn() bool {
+func (l *YesLogger) CanWarn() bool {
 	return l.Level <= LevelWarn
 }
 
-func (l *FileLogger) CanError() bool {
+func (l *YesLogger) CanError() bool {
 	return l.Level <= LevelError
 }
 
-func (l *FileLogger) CanFatal() bool {
+func (l *YesLogger) CanFatal() bool {
 	return l.Level <= LevelFatal
 }
 
-func (l *FileLogger) Trace(v ...any) {
+func (l *YesLogger) Trace(v ...any) {
 	if l.CanTrace() {
 		l.send(2, LevelTrace, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) Debug(v ...any) {
+func (l *YesLogger) Debug(v ...any) {
 	if l.CanDebug() {
 		l.send(2, LevelDebug, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) Info(v ...any) {
+func (l *YesLogger) Info(v ...any) {
 	if l.CanInfo() {
 		l.send(2, LevelInfo, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) Warn(v ...any) {
+func (l *YesLogger) Warn(v ...any) {
 	if l.CanWarn() {
 		l.send(2, LevelWarn, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) Error(v ...any) {
+func (l *YesLogger) Error(v ...any) {
 	if l.CanError() {
 		l.send(2, LevelError, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) Fatal(v ...any) {
+func (l *YesLogger) Fatal(v ...any) {
 	if l.CanFatal() {
 		l.send(2, LevelFatal, fmt.Sprintln(v...))
 	}
 }
 
-func (l *FileLogger) send(calldepth int, level LogLevel, s string) {
+func (l *YesLogger) send(calldepth int, level LogLevel, s string) {
 	now := time.Now()
 	var file string
 	var line int
 
-	// todo: layout
 	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
 		file = "???"
@@ -172,25 +169,16 @@ func (l *FileLogger) send(calldepth int, level LogLevel, s string) {
 	l.pipe <- entry
 }
 
-func (l *FileLogger) write() {
+func (l *YesLogger) write() {
 	var buf []byte
 	for {
 		select {
 		case entry := <-l.pipe:
 			l.writer.Ensure(entry.Ts)
 
-			// resue the slice memory
+			// reuse the slice memory
 			buf = buf[:0]
-			formatTime(&buf, entry.Ts)
-			buf = append(buf, ' ')
-
-			formatFile(&buf, entry.File, entry.Line)
-			buf = append(buf, ' ')
-
-			buf = append(buf, levelName[entry.Level]...)
-			buf = append(buf, ' ')
-
-			buf = append(buf, entry.Msg...)
+			l.formatter.Format(entry, &buf)
 
 			_, err := l.writer.Write(buf)
 			if err != nil {
@@ -203,68 +191,8 @@ func (l *FileLogger) write() {
 				l.sync = make(chan struct{})
 			}
 		case <-l.exit:
+			l.writer.Close()
 			return
 		}
 	}
-}
-
-// from log/log.go in standard library
-func formatFile(buf *[]byte, file string, line int) {
-	// todo reuse filename
-	short := file
-	for i := len(file) - 1; i > 0; i-- {
-		if file[i] == '/' {
-			short = file[i+1:]
-			break
-		}
-	}
-	file = short
-
-	*buf = append(*buf, file...)
-	*buf = append(*buf, ':')
-	itoa(buf, line, -1)
-}
-
-// from log/log.go in standard library
-func formatTime(buf *[]byte, t time.Time) {
-	year, month, day := t.Date()
-	itoa(buf, year, 4)
-	*buf = append(*buf, '/')
-	itoa(buf, int(month), 2)
-	*buf = append(*buf, '/')
-	itoa(buf, day, 2)
-	*buf = append(*buf, ' ')
-	hour, min, sec := t.Clock()
-	itoa(buf, hour, 2)
-	*buf = append(*buf, ':')
-	itoa(buf, min, 2)
-	*buf = append(*buf, ':')
-	itoa(buf, sec, 2)
-	*buf = append(*buf, '.')
-	itoa(buf, t.Nanosecond()/1e6, 3)
-}
-
-// from log/log.go in standard library
-func itoa(buf *[]byte, i int, wid int) {
-	// Assemble decimal in reverse order.
-	var b [20]byte
-	bp := len(b) - 1
-	for i >= 10 || wid > 1 {
-		wid--
-		q := i / 10
-		b[bp] = byte('0' + i - q*10)
-		bp--
-		i = q
-	}
-	// i < 10
-	b[bp] = byte('0' + i)
-	*buf = append(*buf, b[bp:]...)
-}
-
-func getTimeHour(t time.Time) int64 {
-	return t.Unix() / 3600
-}
-
-func getFileName(t time.Time) string {
-	return t.Format("2006-01-02_15")
 }

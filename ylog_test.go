@@ -8,15 +8,11 @@ import (
 )
 
 func BenchmarkInfo(b *testing.B) {
-	var stdPath = "logs"
-	var logger = NewFileLogger(
+	var logger = NewYesLogger(
 		Level(LevelInfo),
-		Path(stdPath),
 		CacheSize(uint16(runtime.NumCPU())),
 		Writer(&discardWriter{}),
 	)
-	logger.Info("Ready")
-	<-time.After(time.Second)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -25,15 +21,11 @@ func BenchmarkInfo(b *testing.B) {
 }
 
 func BenchmarkInfo_Parallel(b *testing.B) {
-	var stdPath = "logs"
-	var logger = NewFileLogger(
+	var logger = NewYesLogger(
 		Level(LevelInfo),
-		Path(stdPath),
 		CacheSize(uint16(runtime.NumCPU())),
 		Writer(&discardWriter{}),
 	)
-	logger.Info("Ready")
-	<-time.After(time.Second)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
