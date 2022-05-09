@@ -1,19 +1,18 @@
 package ylog
 
 import (
-	"context"
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"golang.org/x/net/context"
 )
 
 type KafkaWriter struct {
-	Topic         string
-	Address       string
-	conn          *kafka.Conn
-	batchSize     int
-	buf           []kafka.Message
-	lastWriteTime time.Time
+	Topic     string
+	Address   string
+	writer    *kafka.Writer
+	batchSize int
+	buf       []kafka.Message
 }
 
 func NewKafkaWriter(address string, topic string, batchSize int) *KafkaWriter {
@@ -25,37 +24,31 @@ func NewKafkaWriter(address string, topic string, batchSize int) *KafkaWriter {
 }
 
 func (w *KafkaWriter) Ensure(curTime time.Time) (err error) {
-	if w.conn == nil {
+	if w.writer == nil {
 		w.buf = make([]kafka.Message, 0, w.batchSize)
-		partition := 0
-		w.conn, err = kafka.DialLeader(context.Background(), "tcp", w.Address, w.Topic, partition)
-		w.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+
+		w.writer = &kafka.Writer{
+			Addr:      kafka.TCP(w.Address),
+			Topic:     w.Topic,
+			BatchSize: w.batchSize,
+		}
 	}
 
 	return
 }
 
-func (w *KafkaWriter) Write(buf []byte) (bts int, err error) {
-	w.buf = append(w.buf, kafka.Message{Value: buf})
+func (w *KafkaWriter) Write(buf []byte) (err error) {
 
-	now := time.Now()
-	if now.UnixMilli()-w.lastWriteTime.UnixMilli() > 1000 {
-		bts, err = w.conn.WriteMessages(
-			w.buf...,
-		)
-		w.lastWriteTime = now
-		w.buf = w.buf[:0]
+	if len(w.buf) < w.batchSize-1 {
+		// buf will be reused by ylog, so need copy to a new slice
+		kbuf := append([]byte(nil), buf...)
+		w.buf = append(w.buf, kafka.Message{Value: kbuf})
 		return
 	}
-
-	if len(w.buf) <= w.batchSize-1 {
-		return -1, nil
-	}
-
-	bts, err = w.conn.WriteMessages(
+	w.buf = append(w.buf, kafka.Message{Value: buf})
+	err = w.writer.WriteMessages(context.Background(),
 		w.buf...,
 	)
-	w.lastWriteTime = now
 	w.buf = w.buf[:0]
 	return
 }
@@ -65,5 +58,5 @@ func (w *KafkaWriter) Sync() error {
 }
 
 func (w *KafkaWriter) Close() error {
-	return w.conn.Close()
+	return w.writer.Close()
 }

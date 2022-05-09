@@ -16,9 +16,9 @@ She writes data to disk file, which are divided by hours.
 
 # Benchamark Test 
 
-    goos: darwin
+    goos: windows
     goarch: amd64
     pkg: github.com/bosima/ylog
-    cpu: Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz
-    BenchmarkInfo-8            	  678504	      1762 ns/op	     328 B/op	       4 allocs/op
-    BenchmarkInfo_Parallel-8   	 1322624	       879.5 ns/op	     328 B/op	       4 allocs/op
+    cpu: Intel(R) Core(TM) i5-10400F CPU @ 2.90GHz
+    BenchmarkInfo-12             	  831427	      1318 ns/op	     328 B/op	       4 allocs/op
+    BenchmarkInfo_Parallel-12    	 1669800	       734.5 ns/op	     328 B/op	       4 allocs/op

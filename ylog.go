@@ -113,37 +113,37 @@ func (l *YesLogger) CanFatal() bool {
 
 func (l *YesLogger) Trace(v ...any) {
 	if l.CanTrace() {
-		l.send(2, LevelTrace, fmt.Sprintln(v...))
+		l.send(2, LevelTrace, fmt.Sprint(v...))
 	}
 }
 
 func (l *YesLogger) Debug(v ...any) {
 	if l.CanDebug() {
-		l.send(2, LevelDebug, fmt.Sprintln(v...))
+		l.send(2, LevelDebug, fmt.Sprint(v...))
 	}
 }
 
 func (l *YesLogger) Info(v ...any) {
 	if l.CanInfo() {
-		l.send(2, LevelInfo, fmt.Sprintln(v...))
+		l.send(2, LevelInfo, fmt.Sprint(v...))
 	}
 }
 
 func (l *YesLogger) Warn(v ...any) {
 	if l.CanWarn() {
-		l.send(2, LevelWarn, fmt.Sprintln(v...))
+		l.send(2, LevelWarn, fmt.Sprint(v...))
 	}
 }
 
 func (l *YesLogger) Error(v ...any) {
 	if l.CanError() {
-		l.send(2, LevelError, fmt.Sprintln(v...))
+		l.send(2, LevelError, fmt.Sprint(v...))
 	}
 }
 
 func (l *YesLogger) Fatal(v ...any) {
 	if l.CanFatal() {
-		l.send(2, LevelFatal, fmt.Sprintln(v...))
+		l.send(2, LevelFatal, fmt.Sprint(v...))
 	}
 }
 
@@ -179,8 +179,7 @@ func (l *YesLogger) write() {
 			// reuse the slice memory
 			buf = buf[:0]
 			l.formatter.Format(entry, &buf)
-
-			_, err := l.writer.Write(buf)
+			err := l.writer.Write(buf)
 			if err != nil {
 				// todo: write to ylog.txt
 				log.Println(err)

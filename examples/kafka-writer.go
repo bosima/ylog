@@ -11,65 +11,75 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+var (
+	address        string = "localhost:9092"
+	topic          string = "ylog"
+	writeBatchSize int    = 8
+)
+
 func main() {
+	go receiveData()
+	go publishLog()
+	select {}
+}
+
+func publishLog() {
 	logger := ylog.NewYesLogger(
 		ylog.CacheSize(3),
 		ylog.Level(ylog.LevelInfo),
-		ylog.Writer(ylog.NewKafkaWriter("localhost:9092", "ylog", 8)),
+		ylog.Writer(ylog.NewKafkaWriter(address, topic, writeBatchSize)),
 	)
-
-	logger.Trace("This is a trace log.")
-	logger.Debug("This is a debug log.")
-	logger.Info("This is a info log.")
-	logger.Warn("This is a warn log.")
-	logger.Error("This is a error log.")
-	logger.Fatal("This is a fatal log.")
-
-	go func() {
-		conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", "ylog", 0)
-		if err != nil {
-			log.Fatal("failed to dial leader:", err)
-		}
-
-		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-
-		b := make([]byte, 10e3) // 10KB max per message
-		for {
-			n, err := conn.Read(b)
-			if err != nil {
-				break
-			}
-			fmt.Print(string(b[:n]))
-		}
-	}()
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 100; i++ {
+		for {
+			time.Sleep(time.Millisecond * 30)
 			logger.Info("loop info log.")
 		}
-
 	}()
 
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 100; i++ {
+		for {
+			time.Sleep(time.Millisecond * 60)
 			logger.Warn("loop warn log.")
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 100; i++ {
+		for {
+			time.Sleep(time.Millisecond * 90)
 			logger.Error("loop error log.")
 		}
 	}()
 
 	wg.Wait()
+	logger.Close()
 	log.Println("Publish Done")
+}
 
-	select {}
+func receiveData() {
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:  []string{address},
+		Topic:    topic,
+		GroupID:  "ylog",
+		MinBytes: 500, // 500B
+		MaxBytes: 1e6, // 1MB
+	})
+
+	for {
+		m, err := r.ReadMessage(context.Background())
+		if err != nil {
+			break
+		}
+		fmt.Printf("message at offset %d:%s", m.Offset, string(m.Value))
+	}
+
+	if err := r.Close(); err != nil {
+		log.Fatal("failed to close reader:", err)
+	}
 }

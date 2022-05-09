@@ -43,8 +43,9 @@ func (w *discardWriter) Ensure(curTime time.Time) (err error) {
 	return
 }
 
-func (w *discardWriter) Write(buf []byte) (int, error) {
-	return ioutil.Discard.Write(buf)
+func (w *discardWriter) Write(buf []byte) (err error) {
+	_, err = ioutil.Discard.Write(buf)
+	return err
 }
 
 func (w *discardWriter) Sync() error {

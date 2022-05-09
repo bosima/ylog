@@ -43,8 +43,9 @@ func (w *fileWriter) Ensure(curTime time.Time) (err error) {
 	return
 }
 
-func (w *fileWriter) Write(buf []byte) (int, error) {
-	return w.file.Write(buf)
+func (w *fileWriter) Write(buf []byte) (err error) {
+	_, err = w.file.Write(buf)
+	return
 }
 
 func (w *fileWriter) Sync() error {

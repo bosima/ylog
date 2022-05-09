@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"sync"
+	"time"
 
 	"github.com/bosima/ylog"
 )
@@ -20,30 +21,33 @@ func main() {
 	logger.Error("This is a error log.")
 	logger.Fatal("This is a fatal log.")
 
+	log.Println("Logging...")
+
 	wg := sync.WaitGroup{}
 	wg.Add(3)
-
 	go func() {
-		for i := 0; i < 10000; i++ {
+		defer wg.Done()
+		for {
+			time.Sleep(time.Millisecond * 100)
 			logger.Info("loop info log.")
 		}
-		wg.Done()
 	}()
 
 	go func() {
-		for i := 0; i < 10000; i++ {
+		defer wg.Done()
+		for {
+			time.Sleep(time.Millisecond * 300)
 			logger.Warn("loop warn log.")
 		}
-		wg.Done()
 	}()
 
 	go func() {
-		for i := 0; i < 10000; i++ {
+		defer wg.Done()
+		for {
+			time.Sleep(time.Millisecond * 600)
 			logger.Error("loop error log.")
 		}
-		wg.Done()
 	}()
-
 	wg.Wait()
 	log.Println("Publish Done")
 
