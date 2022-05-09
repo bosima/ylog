@@ -4,7 +4,7 @@ import "runtime"
 
 var std = NewYesLogger(
 	Level(LevelInfo),
-	CacheSize(uint16(runtime.NumCPU())),
+	CacheSize(runtime.NumCPU()),
 )
 
 func SetLevel(level LogLevel) {

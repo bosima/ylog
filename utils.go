@@ -5,6 +5,15 @@ import "time"
 // from log/log.go in standard library
 func formatShortFile(buf *[]byte, file string, line int) {
 	// todo reuse filename
+
+	file = toShortFile(file)
+
+	*buf = append(*buf, file...)
+	*buf = append(*buf, ':')
+	itoa(buf, line, -1)
+}
+
+func toShortFile(file string) string {
 	short := file
 	for i := len(file) - 1; i > 0; i-- {
 		if file[i] == '/' {
@@ -12,11 +21,7 @@ func formatShortFile(buf *[]byte, file string, line int) {
 			break
 		}
 	}
-	file = short
-
-	*buf = append(*buf, file...)
-	*buf = append(*buf, ':')
-	itoa(buf, line, -1)
+	return short
 }
 
 // from log/log.go in standard library

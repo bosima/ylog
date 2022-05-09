@@ -8,7 +8,7 @@ func Level(level LogLevel) Option {
 	}
 }
 
-func CacheSize(size uint16) Option {
+func CacheSize(size int) Option {
 	return func(logger *YesLogger) {
 		logger.cacheSize = size
 		if size > 0 {

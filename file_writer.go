@@ -45,6 +45,10 @@ func (w *fileWriter) Ensure(curTime time.Time) (err error) {
 
 func (w *fileWriter) Write(buf []byte) (err error) {
 	_, err = w.file.Write(buf)
+	if err != nil {
+		return
+	}
+	_, err = w.file.Write([]byte{'\n'})
 	return
 }
 

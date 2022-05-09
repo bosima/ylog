@@ -7,7 +7,12 @@ import (
 	"time"
 )
 
-type LogLevel = byte
+type LogLevel byte
+
+func (l LogLevel) MarshalJSON() ([]byte, error) {
+	var lName string = levelName[l]
+	return []byte(`"` + lName + `"`), nil
+}
 
 const (
 	LevelTrace LogLevel = iota
@@ -41,17 +46,17 @@ type YesLogger struct {
 	writer    LoggerWriter
 	formatter LoggerFormatter
 	pipe      chan *logEntry
-	cacheSize uint16
+	cacheSize int
 	sync      chan struct{}
 	exit      chan struct{}
 }
 
 type logEntry struct {
-	Ts    time.Time
-	Msg   string
-	File  string
-	Line  int
-	Level LogLevel
+	Ts    time.Time `json:"ts"`
+	Msg   string    `json:"msg"`
+	File  string    `json:"file"`
+	Line  int       `json:"line"`
+	Level LogLevel  `json:"level"`
 }
 
 func NewYesLogger(opts ...Option) (logger *YesLogger) {

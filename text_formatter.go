@@ -18,7 +18,6 @@ func (f *textFormatter) Format(entry *logEntry, buf *[]byte) error {
 	*buf = append(*buf, ' ')
 
 	*buf = append(*buf, entry.Msg...)
-	*buf = append(*buf, '\n')
 
 	return nil
 }
