@@ -1,7 +1,7 @@
 # Introduction
 Ylog is a log library of Go language.
 
-She writes data to disk file, which are divided by hours.
+She can write data to disk files, Kafka, etc., in text, JSON, etc.
 
 # Usage
 
