@@ -43,8 +43,8 @@ func (w *KafkaWriter) Write(buf []byte) (bts int, err error) {
 		bts, err = w.conn.WriteMessages(
 			w.buf...,
 		)
-		w.buf = w.buf[:0]
 		w.lastWriteTime = now
+		w.buf = w.buf[:0]
 		return
 	}
 
@@ -55,8 +55,8 @@ func (w *KafkaWriter) Write(buf []byte) (bts int, err error) {
 	bts, err = w.conn.WriteMessages(
 		w.buf...,
 	)
-	w.buf = w.buf[:0]
 	w.lastWriteTime = now
+	w.buf = w.buf[:0]
 	return
 }
 

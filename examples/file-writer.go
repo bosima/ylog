@@ -1,21 +1,16 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"sync"
-	"time"
 
 	"github.com/bosima/ylog"
-	"github.com/segmentio/kafka-go"
 )
 
 func main() {
 	logger := ylog.NewYesLogger(
 		ylog.CacheSize(3),
 		ylog.Level(ylog.LevelInfo),
-		ylog.Writer(ylog.NewKafkaWriter("localhost:9092", "ylog", 8)),
 	)
 
 	logger.Trace("This is a trace log.")
@@ -24,24 +19,6 @@ func main() {
 	logger.Warn("This is a warn log.")
 	logger.Error("This is a error log.")
 	logger.Fatal("This is a fatal log.")
-
-	go func() {
-		conn, err := kafka.DialLeader(context.Background(), "tcp", "localhost:9092", "ylog", 0)
-		if err != nil {
-			log.Fatal("failed to dial leader:", err)
-		}
-
-		conn.SetReadDeadline(time.Now().Add(10 * time.Second))
-
-		b := make([]byte, 10e3) // 10KB max per message
-		for {
-			n, err := conn.Read(b)
-			if err != nil {
-				break
-			}
-			fmt.Print(string(b[:n]))
-		}
-	}()
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)

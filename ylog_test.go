@@ -50,3 +50,7 @@ func (w *discardWriter) Write(buf []byte) (int, error) {
 func (w *discardWriter) Sync() error {
 	return nil
 }
+
+func (w *discardWriter) Close() error {
+	return nil
+}
