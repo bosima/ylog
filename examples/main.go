@@ -5,10 +5,12 @@ import (
 )
 
 func main() {
-	ylog.SetLevel(ylog.ToInfo)
+	// Log with the default instance of the 'FileLogger'
+	ylog.SetLevel(ylog.LevelInfo)
 	ylog.Info("I am a info log.")
 
-	var stdPath = "logs2"
-	var logger = ylog.NewFileLogger(ylog.ToInfo, stdPath)
+	// Log with a 'FileLogger' instance created by NewXXX
+	var logPath = "logs2"
+	var logger = ylog.NewFileLogger(ylog.LevelInfo, logPath)
 	logger.Info("I am a info log too.")
 }
