@@ -32,17 +32,8 @@ var levelName = []string{
 	LevelFatal: "Fatal",
 }
 
-type Logger interface {
-	Trace(v ...any)
-	Debug(v ...any)
-	Info(v ...any)
-	Warn(v ...any)
-	Error(v ...any)
-	Fatal(v ...any)
-}
-
 type YesLogger struct {
-	Level     LogLevel
+	level     LogLevel
 	writer    LoggerWriter
 	formatter LoggerFormatter
 	pipe      chan *logEntry
@@ -85,35 +76,35 @@ func (l *YesLogger) Sync() {
 }
 
 func (l *YesLogger) SetLevel(level LogLevel) {
-	l.Level = level
+	l.level = level
 }
 
 func (l *YesLogger) GetLevel() LogLevel {
-	return l.Level
+	return l.level
 }
 
 func (l *YesLogger) CanTrace() bool {
-	return l.Level <= LevelTrace
+	return l.level <= LevelTrace
 }
 
 func (l *YesLogger) CanDebug() bool {
-	return l.Level <= LevelDebug
+	return l.level <= LevelDebug
 }
 
 func (l *YesLogger) CanInfo() bool {
-	return l.Level <= LevelInfo
+	return l.level <= LevelInfo
 }
 
 func (l *YesLogger) CanWarn() bool {
-	return l.Level <= LevelWarn
+	return l.level <= LevelWarn
 }
 
 func (l *YesLogger) CanError() bool {
-	return l.Level <= LevelError
+	return l.level <= LevelError
 }
 
 func (l *YesLogger) CanFatal() bool {
-	return l.Level <= LevelFatal
+	return l.level <= LevelFatal
 }
 
 func (l *YesLogger) Trace(v ...any) {

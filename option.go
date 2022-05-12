@@ -4,7 +4,7 @@ type Option func(logger *YesLogger)
 
 func Level(level LogLevel) Option {
 	return func(logger *YesLogger) {
-		logger.Level = level
+		logger.level = level
 	}
 }
 

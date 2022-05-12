@@ -3,7 +3,7 @@ package ylog
 type textFormatter struct {
 }
 
-func NewTextFormatter() *textFormatter {
+func NewTextFormatter() LoggerFormatter {
 	return &textFormatter{}
 }
 

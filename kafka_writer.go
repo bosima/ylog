@@ -7,56 +7,48 @@ import (
 	"golang.org/x/net/context"
 )
 
-type KafkaWriter struct {
+type kafkaWriter struct {
 	Topic     string
 	Address   string
 	writer    *kafka.Writer
 	batchSize int
-	buf       []kafka.Message
 }
 
-func NewKafkaWriter(address string, topic string, batchSize int) *KafkaWriter {
-	return &KafkaWriter{
+func NewKafkaWriter(address string, topic string, batchSize int) LoggerWriter {
+	return &kafkaWriter{
 		Address:   address,
 		Topic:     topic,
 		batchSize: batchSize,
 	}
 }
 
-func (w *KafkaWriter) Ensure(curTime time.Time) (err error) {
+func (w *kafkaWriter) Ensure(curTime time.Time) (err error) {
 	if w.writer == nil {
-		w.buf = make([]kafka.Message, 0, w.batchSize)
-
 		w.writer = &kafka.Writer{
 			Addr:      kafka.TCP(w.Address),
 			Topic:     w.Topic,
 			BatchSize: w.batchSize,
+			Async:     true,
 		}
 	}
 
 	return
 }
 
-func (w *KafkaWriter) Write(buf []byte) (err error) {
-
-	if len(w.buf) < w.batchSize-1 {
-		// buf will be reused by ylog, so need copy to a new slice
-		kbuf := append([]byte(nil), buf...)
-		w.buf = append(w.buf, kafka.Message{Value: kbuf})
-		return
-	}
-	w.buf = append(w.buf, kafka.Message{Value: buf})
+func (w *kafkaWriter) Write(buf []byte) (err error) {
+	// buf will be reused by ylog when this method return,
+	// with aysnc write, we need copy data to a new slice
+	kbuf := append([]byte(nil), buf...)
 	err = w.writer.WriteMessages(context.Background(),
-		w.buf...,
+		kafka.Message{Value: kbuf},
 	)
-	w.buf = w.buf[:0]
 	return
 }
 
-func (w *KafkaWriter) Sync() error {
+func (w *kafkaWriter) Sync() error {
 	return nil
 }
 
-func (w *KafkaWriter) Close() error {
+func (w *kafkaWriter) Close() error {
 	return w.writer.Close()
 }

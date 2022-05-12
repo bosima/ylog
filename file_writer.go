@@ -14,7 +14,7 @@ type fileWriter struct {
 	Path     string
 }
 
-func NewFileWriter(path string) *fileWriter {
+func NewFileWriter(path string) LoggerWriter {
 	return &fileWriter{Path: path}
 }
 
@@ -44,11 +44,8 @@ func (w *fileWriter) Ensure(curTime time.Time) (err error) {
 }
 
 func (w *fileWriter) Write(buf []byte) (err error) {
+	buf = append(buf, '\n')
 	_, err = w.file.Write(buf)
-	if err != nil {
-		return
-	}
-	_, err = w.file.Write([]byte{'\n'})
 	return
 }
 

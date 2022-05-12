@@ -10,7 +10,7 @@ import (
 func BenchmarkInfo(b *testing.B) {
 	var logger = NewYesLogger(
 		Level(LevelInfo),
-		CacheSize(uint16(runtime.NumCPU())),
+		CacheSize(runtime.NumCPU()),
 		Writer(&discardWriter{}),
 	)
 
@@ -23,7 +23,7 @@ func BenchmarkInfo(b *testing.B) {
 func BenchmarkInfo_Parallel(b *testing.B) {
 	var logger = NewYesLogger(
 		Level(LevelInfo),
-		CacheSize(uint16(runtime.NumCPU())),
+		CacheSize(runtime.NumCPU()),
 		Writer(&discardWriter{}),
 	)
 

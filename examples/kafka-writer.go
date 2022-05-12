@@ -76,7 +76,7 @@ func receiveData() {
 		if err != nil {
 			break
 		}
-		fmt.Printf("message at offset %d:%s", m.Offset, string(m.Value))
+		fmt.Printf("message at offset %d:%s\n", m.Offset, string(m.Value))
 	}
 
 	if err := r.Close(); err != nil {
