@@ -10,7 +10,7 @@ import (
 type LogLevel byte
 
 func (l LogLevel) MarshalJSON() ([]byte, error) {
-	var lName string = levelName[l]
+	var lName string = levelNames[l]
 	return []byte(`"` + lName + `"`), nil
 }
 
@@ -23,7 +23,7 @@ const (
 	LevelFatal
 )
 
-var levelName = []string{
+var levelNames = []string{
 	LevelTrace: "Trace",
 	LevelDebug: "Debug",
 	LevelInfo:  "Info",
@@ -44,10 +44,10 @@ type YesLogger struct {
 
 type logEntry struct {
 	Ts    time.Time `json:"ts"`
-	Msg   string    `json:"msg"`
 	File  string    `json:"file"`
 	Line  int       `json:"line"`
 	Level LogLevel  `json:"level"`
+	Msg   string    `json:"msg"`
 }
 
 func NewYesLogger(opts ...Option) (logger *YesLogger) {
@@ -143,11 +143,7 @@ func (l *YesLogger) Fatal(v ...any) {
 	}
 }
 
-func (l *YesLogger) send(calldepth int, level LogLevel, s string) {
-	now := time.Now()
-	var file string
-	var line int
-
+func (l *YesLogger) send(calldepth int, lev LogLevel, s string) {
 	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
 		file = "???"
@@ -155,11 +151,11 @@ func (l *YesLogger) send(calldepth int, level LogLevel, s string) {
 	}
 
 	entry := &logEntry{
-		Level: level,
-		Msg:   s,
+		Ts:    time.Now(),
 		File:  file,
 		Line:  line,
-		Ts:    now,
+		Level: lev,
+		Msg:   s,
 	}
 
 	l.pipe <- entry

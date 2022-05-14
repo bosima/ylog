@@ -3,7 +3,7 @@ package ylog
 type textFormatter struct {
 }
 
-func NewTextFormatter() LoggerFormatter {
+func NewTextFormatter() *textFormatter {
 	return &textFormatter{}
 }
 
@@ -14,7 +14,7 @@ func (f *textFormatter) Format(entry *logEntry, buf *[]byte) error {
 	formatShortFile(buf, entry.File, entry.Line)
 	*buf = append(*buf, ' ')
 
-	*buf = append(*buf, levelName[entry.Level]...)
+	*buf = append(*buf, levelNames[entry.Level]...)
 	*buf = append(*buf, ' ')
 
 	*buf = append(*buf, entry.Msg...)

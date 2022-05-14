@@ -2,35 +2,20 @@ package ylog
 
 import (
 	"io/ioutil"
-	"runtime"
 	"testing"
 	"time"
 )
 
 func BenchmarkInfo(b *testing.B) {
-	var logger = NewYesLogger(
+	var log = NewYesLogger(
 		Level(LevelInfo),
-		CacheSize(runtime.NumCPU()),
-		Writer(&discardWriter{}),
-	)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		logger.Info("This is a Benchmark info.")
-	}
-}
-
-func BenchmarkInfo_Parallel(b *testing.B) {
-	var logger = NewYesLogger(
-		Level(LevelInfo),
-		CacheSize(runtime.NumCPU()),
 		Writer(&discardWriter{}),
 	)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			logger.Info("This is a Benchmark info.")
+			log.Info("This is a Benchmark info.")
 		}
 	})
 }
