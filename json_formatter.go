@@ -10,7 +10,7 @@ func NewJsonFormatter() LoggerFormatter {
 }
 
 func (f *jsonFormatter) Format(entry *logEntry, buf *[]byte) (err error) {
-	entry.File = toShortFile(entry.File)
+	entry.File = toShort(entry.File)
 	jsonBuf, err := json.Marshal(entry)
 	*buf = append(*buf, jsonBuf...)
 	return

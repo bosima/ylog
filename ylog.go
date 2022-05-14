@@ -32,7 +32,7 @@ var levelNames = []string{
 	LevelFatal: "Fatal",
 }
 
-type YesLogger struct {
+type yesLogger struct {
 	level     LogLevel
 	writer    LoggerWriter
 	formatter LoggerFormatter
@@ -50,8 +50,8 @@ type logEntry struct {
 	Msg   string    `json:"msg"`
 }
 
-func NewYesLogger(opts ...Option) (logger *YesLogger) {
-	logger = &YesLogger{}
+func NewYesLogger(opts ...Option) (logger *yesLogger) {
+	logger = &yesLogger{}
 	logger.pipe = make(chan *logEntry, runtime.NumCPU())
 	logger.writer = NewFileWriter("logs")
 	logger.formatter = NewTextFormatter()
@@ -67,83 +67,83 @@ func NewYesLogger(opts ...Option) (logger *YesLogger) {
 	return
 }
 
-func (l *YesLogger) Close() {
+func (l *yesLogger) Close() {
 	close(l.exit)
 }
 
-func (l *YesLogger) Sync() {
+func (l *yesLogger) Sync() {
 	close(l.sync)
 }
 
-func (l *YesLogger) SetLevel(level LogLevel) {
+func (l *yesLogger) SetLevel(level LogLevel) {
 	l.level = level
 }
 
-func (l *YesLogger) GetLevel() LogLevel {
+func (l *yesLogger) GetLevel() LogLevel {
 	return l.level
 }
 
-func (l *YesLogger) CanTrace() bool {
+func (l *yesLogger) CanTrace() bool {
 	return l.level <= LevelTrace
 }
 
-func (l *YesLogger) CanDebug() bool {
+func (l *yesLogger) CanDebug() bool {
 	return l.level <= LevelDebug
 }
 
-func (l *YesLogger) CanInfo() bool {
+func (l *yesLogger) CanInfo() bool {
 	return l.level <= LevelInfo
 }
 
-func (l *YesLogger) CanWarn() bool {
+func (l *yesLogger) CanWarn() bool {
 	return l.level <= LevelWarn
 }
 
-func (l *YesLogger) CanError() bool {
+func (l *yesLogger) CanError() bool {
 	return l.level <= LevelError
 }
 
-func (l *YesLogger) CanFatal() bool {
+func (l *yesLogger) CanFatal() bool {
 	return l.level <= LevelFatal
 }
 
-func (l *YesLogger) Trace(v ...any) {
+func (l *yesLogger) Trace(v ...any) {
 	if l.CanTrace() {
 		l.send(2, LevelTrace, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) Debug(v ...any) {
+func (l *yesLogger) Debug(v ...any) {
 	if l.CanDebug() {
 		l.send(2, LevelDebug, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) Info(v ...any) {
+func (l *yesLogger) Info(v ...any) {
 	if l.CanInfo() {
 		l.send(2, LevelInfo, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) Warn(v ...any) {
+func (l *yesLogger) Warn(v ...any) {
 	if l.CanWarn() {
 		l.send(2, LevelWarn, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) Error(v ...any) {
+func (l *yesLogger) Error(v ...any) {
 	if l.CanError() {
 		l.send(2, LevelError, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) Fatal(v ...any) {
+func (l *yesLogger) Fatal(v ...any) {
 	if l.CanFatal() {
 		l.send(2, LevelFatal, fmt.Sprint(v...))
 	}
 }
 
-func (l *YesLogger) send(calldepth int, lev LogLevel, s string) {
+func (l *yesLogger) send(calldepth int, lev LogLevel, s string) {
 	_, file, line, ok := runtime.Caller(calldepth)
 	if !ok {
 		file = "???"
@@ -161,7 +161,7 @@ func (l *YesLogger) send(calldepth int, lev LogLevel, s string) {
 	l.pipe <- entry
 }
 
-func (l *YesLogger) write() {
+func (l *yesLogger) write() {
 	var buf []byte
 	for {
 		select {
@@ -169,7 +169,7 @@ func (l *YesLogger) write() {
 			// reuse the slice memory
 			buf = buf[:0]
 			l.formatter.Format(entry, &buf)
-			l.writer.Ensure(entry.Ts)
+			l.writer.Ensure(entry)
 			err := l.writer.Write(buf)
 			if err != nil {
 				// todo: write to ylog.txt

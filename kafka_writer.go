@@ -1,8 +1,6 @@
 package ylog
 
 import (
-	"time"
-
 	"github.com/segmentio/kafka-go"
 	"golang.org/x/net/context"
 )
@@ -22,7 +20,7 @@ func NewKafkaWriter(address string, topic string, batchSize int) LoggerWriter {
 	}
 }
 
-func (w *kafkaWriter) Ensure(curTime time.Time) (err error) {
+func (w *kafkaWriter) Ensure(_ *logEntry) (err error) {
 	if w.writer == nil {
 		w.writer = &kafka.Writer{
 			Addr:      kafka.TCP(w.Address),

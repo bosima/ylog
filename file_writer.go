@@ -18,28 +18,28 @@ func NewFileWriter(path string) LoggerWriter {
 	return &fileWriter{Path: path}
 }
 
-func (w *fileWriter) Ensure(curTime time.Time) (err error) {
+func (w *fileWriter) Ensure(entry *logEntry) (err error) {
 	if w.file == nil {
 		w.mu.Lock()
 		defer w.mu.Unlock()
 		if w.file == nil {
-			f, err := w.createFile(w.Path, curTime)
+			f, err := w.createFile(w.Path, entry.Ts)
 			if err != nil {
 				return err
 			}
-			w.lastHour = w.getTimeHour(curTime)
+			w.lastHour = w.getTimeHour(entry.Ts)
 			w.file = f
 		}
 		return
 	}
 
-	currentHour := w.getTimeHour(curTime)
+	currentHour := w.getTimeHour(entry.Ts)
 	if w.lastHour != currentHour {
 		w.mu.Lock()
 		defer w.mu.Unlock()
 		if w.lastHour != currentHour {
 			_ = w.file.Close()
-			f, err := w.createFile(w.Path, curTime)
+			f, err := w.createFile(w.Path, entry.Ts)
 			if err != nil {
 				return err
 			}

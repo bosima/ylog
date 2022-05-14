@@ -3,7 +3,6 @@ package ylog
 import (
 	"io/ioutil"
 	"testing"
-	"time"
 )
 
 func BenchmarkInfo(b *testing.B) {
@@ -24,7 +23,7 @@ func BenchmarkInfo(b *testing.B) {
 type discardWriter struct {
 }
 
-func (w *discardWriter) Ensure(curTime time.Time) (err error) {
+func (w *discardWriter) Ensure(_ *logEntry) (err error) {
 	return
 }
 

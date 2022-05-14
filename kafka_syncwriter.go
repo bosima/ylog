@@ -24,7 +24,7 @@ func NewKafkaSyncWriter(address string, topic string, batchSize int) LoggerWrite
 	}
 }
 
-func (w *kafkaSyncWriter) Ensure(curTime time.Time) (err error) {
+func (w *kafkaSyncWriter) Ensure(_ *logEntry) (err error) {
 	if w.writer == nil {
 		w.buf = make([]kafka.Message, 0, w.batchSize)
 
