@@ -23,8 +23,12 @@ func (w *fileWriter) Ensure(curTime time.Time) (err error) {
 		w.mu.Lock()
 		defer w.mu.Unlock()
 		if w.file == nil {
-			w.file, err = w.createFile(w.Path, curTime)
+			f, err := w.createFile(w.Path, curTime)
+			if err != nil {
+				return err
+			}
 			w.lastHour = w.getTimeHour(curTime)
+			w.file = f
 		}
 		return
 	}
@@ -35,8 +39,12 @@ func (w *fileWriter) Ensure(curTime time.Time) (err error) {
 		defer w.mu.Unlock()
 		if w.lastHour != currentHour {
 			_ = w.file.Close()
-			w.file, err = w.createFile(w.Path, curTime)
+			f, err := w.createFile(w.Path, curTime)
+			if err != nil {
+				return err
+			}
 			w.lastHour = currentHour
+			w.file = f
 		}
 	}
 

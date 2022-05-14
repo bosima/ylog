@@ -52,7 +52,7 @@ type logEntry struct {
 
 func NewYesLogger(opts ...Option) (logger *YesLogger) {
 	logger = &YesLogger{}
-	logger.pipe = make(chan *logEntry)
+	logger.pipe = make(chan *logEntry, runtime.NumCPU())
 	logger.writer = NewFileWriter("logs")
 	logger.formatter = NewTextFormatter()
 
@@ -170,11 +170,10 @@ func (l *YesLogger) write() {
 	for {
 		select {
 		case entry := <-l.pipe:
-			l.writer.Ensure(entry.Ts)
-
 			// reuse the slice memory
 			buf = buf[:0]
 			l.formatter.Format(entry, &buf)
+			l.writer.Ensure(entry.Ts)
 			err := l.writer.Write(buf)
 			if err != nil {
 				// todo: write to ylog.txt
