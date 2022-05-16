@@ -3,13 +3,11 @@ package ylog
 import (
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 )
 
 type fileWriter struct {
 	file     *os.File
-	mu       sync.Mutex
 	lastHour int64
 	Path     string
 }
@@ -20,32 +18,24 @@ func NewFileWriter(path string) LoggerWriter {
 
 func (w *fileWriter) Ensure(entry *logEntry) (err error) {
 	if w.file == nil {
-		w.mu.Lock()
-		defer w.mu.Unlock()
-		if w.file == nil {
-			f, err := w.createFile(w.Path, entry.Ts)
-			if err != nil {
-				return err
-			}
-			w.lastHour = w.getTimeHour(entry.Ts)
-			w.file = f
+		f, err := w.createFile(w.Path, entry.Ts)
+		if err != nil {
+			return err
 		}
-		return
+		w.lastHour = w.getTimeHour(entry.Ts)
+		w.file = f
+		return nil
 	}
 
 	currentHour := w.getTimeHour(entry.Ts)
 	if w.lastHour != currentHour {
-		w.mu.Lock()
-		defer w.mu.Unlock()
-		if w.lastHour != currentHour {
-			_ = w.file.Close()
-			f, err := w.createFile(w.Path, entry.Ts)
-			if err != nil {
-				return err
-			}
-			w.lastHour = currentHour
-			w.file = f
+		_ = w.file.Close()
+		f, err := w.createFile(w.Path, entry.Ts)
+		if err != nil {
+			return err
 		}
+		w.lastHour = currentHour
+		w.file = f
 	}
 
 	return
@@ -76,10 +66,6 @@ func (w *fileWriter) createFile(path string, t time.Time) (file *os.File, err er
 
 	filePath := filepath.Join(dir, w.getFileName(t)+".txt")
 	file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		return
-	}
-
 	return
 }
 
