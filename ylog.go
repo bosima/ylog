@@ -179,7 +179,7 @@ func (l *FileLogger) CanFatal() bool {
 func (l *FileLogger) Trace(v ...any) {
 	if l.CanTrace() {
 		l.ensureFile()
-		v = append([]any{"Trace "}, v...)
+		v = append([]any{"Trace"}, v...)
 		l.iLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
@@ -187,7 +187,7 @@ func (l *FileLogger) Trace(v ...any) {
 func (l *FileLogger) Debug(v ...any) {
 	if l.CanDebug() {
 		l.ensureFile()
-		v = append([]any{"Debug "}, v...)
+		v = append([]any{"Debug"}, v...)
 		l.iLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
