@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,16 +30,16 @@ type FileLogger struct {
 	Path     string
 }
 
-func getTimeHour(t *time.Time) int64 {
+func getTimeHour(t time.Time) int64 {
 	return t.Unix() / 3600
 }
 
-func getFileName(t *time.Time) string {
+func getFileName(t time.Time) string {
 	return t.Format("2006-01-02_15")
 }
 
-func createFile(path *string, t *time.Time) (file *os.File, err error) {
-	dir := filepath.Join(*path, t.Format("200601"))
+func createFile(path string, t time.Time) (file *os.File, err error) {
+	dir := filepath.Join(path, t.Format("200601"))
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0766)
 		if err != nil {
@@ -112,36 +113,38 @@ func Fatal(v ...any) {
 
 func NewFileLogger(level LogLevel, path string) (logger *FileLogger) {
 	logger = &FileLogger{}
-	logger.iLogger = log.New(os.Stderr, "", log.LstdFlags)
 	logger.Level = level
 	logger.Path = path
+	logger.iLogger = log.New(os.Stderr, "", log.LstdFlags)
 	return
 }
 
 func (l *FileLogger) ensureFile() (err error) {
-	currentTime := time.Now()
-	if l.file == nil {
+	curTime := time.Now()
+	curHour := getTimeHour(curTime)
+	if atomic.LoadInt64(&l.lastHour) != curHour {
 		l.mu.Lock()
 		defer l.mu.Unlock()
-		if l.file == nil {
-			l.file, err = createFile(&l.Path, &currentTime)
+		if l.lastHour != curHour {
+			if l.file == nil {
+				l.file, err = createFile(l.Path, curTime)
+				if err != nil {
+					return err
+				}
+				l.iLogger.SetOutput(l.file)
+				l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
+				atomic.StoreInt64(&l.lastHour, curHour)
+				return
+			}
+
+			_ = l.file.Close()
+			l.file, err = createFile(l.Path, curTime)
+			if err != nil {
+				return err
+			}
 			l.iLogger.SetOutput(l.file)
 			l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
-			l.lastHour = getTimeHour(&currentTime)
-		}
-		return
-	}
-
-	currentHour := getTimeHour(&currentTime)
-	if l.lastHour != currentHour {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-		if l.lastHour != currentHour {
-			_ = l.file.Close()
-			l.file, err = createFile(&l.Path, &currentTime)
-			l.iLogger.SetOutput(l.file)
-			l.iLogger.SetFlags(log.Llongfile | log.Ldate | log.Ltime)
-			l.lastHour = getTimeHour(&currentTime)
+			atomic.StoreInt64(&l.lastHour, curHour)
 		}
 	}
 
