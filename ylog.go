@@ -2,7 +2,7 @@ package ylog
 
 import (
 	"fmt"
-	"log"
+	"os"
 	"runtime"
 	"time"
 )
@@ -38,6 +38,7 @@ type yesLogger struct {
 	formatter LoggerFormatter
 	pipe      chan *logEntry
 	cacheSize int
+	errFile   *os.File
 	sync      chan struct{}
 	exit      chan struct{}
 }
@@ -62,6 +63,7 @@ func NewYesLogger(opts ...Option) (logger *yesLogger) {
 
 	logger.sync = make(chan struct{})
 	logger.exit = make(chan struct{})
+
 	go logger.write()
 
 	return
@@ -172,8 +174,7 @@ func (l *yesLogger) write() {
 			l.writer.Ensure(entry)
 			err := l.writer.Write(buf)
 			if err != nil {
-				// todo: write to ylog.txt
-				log.Println(err)
+				l.writeError(err)
 			}
 		case _, ok := <-l.sync:
 			if ok {
@@ -185,4 +186,20 @@ func (l *yesLogger) write() {
 			return
 		}
 	}
+}
+
+func (l *yesLogger) writeError(err error) {
+	if l.errFile == nil {
+		l.errFile, _ = os.OpenFile("ylog.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	}
+
+	var buf []byte
+	formatTime(&buf, time.Now())
+	buf = append(buf, ' ')
+	buf = append(buf, "Error"...)
+	buf = append(buf, ' ')
+	buf = append(buf, err.Error()...)
+	buf = append(buf, '\n')
+
+	l.errFile.Write(buf)
 }

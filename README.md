@@ -21,3 +21,7 @@ It can write data to disk file or Kafka, with plain text or Json.
     pkg: github.com/bosima/ylog
     cpu: Intel(R) Core(TM) i5-8259U CPU @ 2.30GHz
     BenchmarkInfo-8   	 1332333	       871.6 ns/op	     328 B/op	       4 allocs/op
+
+# TODO
+
+Write a log message to multiple writers.
