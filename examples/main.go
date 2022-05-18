@@ -9,8 +9,7 @@ func main() {
 	ylog.SetLevel(ylog.LevelInfo)
 	ylog.Info("I am a info log.")
 
-	// Log with a 'FileLogger' instance created by NewXXX
-	var logPath = "logs2"
-	var logger = ylog.NewFileLogger(ylog.LevelInfo, logPath)
-	logger.Info("I am a info log too.")
+	// Log with a 'FileLogger' instance that created by NewXXX
+	log := ylog.NewFileLogger(ylog.LevelInfo, "logs2")
+	log.Info("I am a info log too.")
 }
