@@ -123,29 +123,38 @@ func (l *FileLogger) ensureFile() (err error) {
 	curTime := time.Now()
 	curHour := getTimeHour(curTime)
 	if atomic.LoadInt64(&l.lastHour) != curHour {
-		l.mu.Lock()
-		defer l.mu.Unlock()
-		if l.lastHour != curHour {
-			if l.file == nil {
-				l.file, err = createFile(l.Path, curTime)
-				if err != nil {
-					return err
-				}
-				l.iLogger.SetOutput(l.file)
-				l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
-				atomic.StoreInt64(&l.lastHour, curHour)
-				return
-			}
+		return l.ensureFileSlow(curTime, curHour)
+	}
 
-			_ = l.file.Close()
-			l.file, err = createFile(l.Path, curTime)
-			if err != nil {
-				return err
-			}
-			l.iLogger.SetOutput(l.file)
-			l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
-			atomic.StoreInt64(&l.lastHour, curHour)
+	return
+}
+
+func (l *FileLogger) ensureFileSlow(curTime time.Time, curHour int64) (err error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.lastHour != curHour {
+		defer atomic.StoreInt64(&l.lastHour, curHour)
+		l.createFile(curTime, curHour)
+	}
+	return
+}
+
+func (l *FileLogger) createFile(curTime time.Time, curHour int64) (err error) {
+	if l.file == nil {
+		l.file, err = createFile(l.Path, curTime)
+		if err != nil {
+			return err
 		}
+		l.iLogger.SetOutput(l.file)
+		l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
+	} else {
+		_ = l.file.Close()
+		l.file, err = createFile(l.Path, curTime)
+		if err != nil {
+			return err
+		}
+		l.iLogger.SetOutput(l.file)
+		l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
 	}
 
 	return
