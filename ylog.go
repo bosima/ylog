@@ -133,31 +133,35 @@ func (l *FileLogger) ensureFileSlow(curTime time.Time, curHour int64) (err error
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.lastHour != curHour {
-		defer atomic.StoreInt64(&l.lastHour, curHour)
+		defer func() {
+			if r := recover(); r == nil {
+				atomic.StoreInt64(&l.lastHour, curHour)
+			}
+		}()
 		l.createFile(curTime, curHour)
 	}
 	return
 }
 
-func (l *FileLogger) createFile(curTime time.Time, curHour int64) (err error) {
+func (l *FileLogger) createFile(curTime time.Time, curHour int64) {
 	if l.file == nil {
-		l.file, err = createFile(l.Path, curTime)
+		f, err := createFile(l.Path, curTime)
 		if err != nil {
-			return err
+			panic(err)
 		}
+		l.file = f
 		l.iLogger.SetOutput(l.file)
 		l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
 	} else {
 		_ = l.file.Close()
-		l.file, err = createFile(l.Path, curTime)
+		f, err := createFile(l.Path, curTime)
 		if err != nil {
-			return err
+			panic(err)
 		}
+		l.file = f
 		l.iLogger.SetOutput(l.file)
 		l.iLogger.SetFlags(log.Lshortfile | log.Ldate | log.Ltime | log.Lmicroseconds)
 	}
-
-	return
 }
 
 func (l *FileLogger) SetLevel(level LogLevel) {
