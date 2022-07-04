@@ -27,7 +27,7 @@ func publishLog() {
 	logger := ylog.NewYesLogger(
 		ylog.CacheSize(3),
 		ylog.Level(ylog.LevelInfo),
-		ylog.Writer(ylog.NewKafkaWriter(address, topic, writeBatchSize)),
+		ylog.Writer(ylog.NewKafkaWriter(address, topic, writeBatchSize, ylog.NewTextFormatter())),
 	)
 
 	wg := sync.WaitGroup{}

@@ -1,7 +1,6 @@
 package ylog
 
 import (
-	"io/ioutil"
 	"testing"
 )
 
@@ -23,13 +22,8 @@ func BenchmarkInfo(b *testing.B) {
 type discardWriter struct {
 }
 
-func (w *discardWriter) Ensure(_ *logEntry) (err error) {
+func (w *discardWriter) Write(entry *logEntry) (err error) {
 	return
-}
-
-func (w *discardWriter) Write(buf []byte) (err error) {
-	_, err = ioutil.Discard.Write(buf)
-	return err
 }
 
 func (w *discardWriter) Sync() error {

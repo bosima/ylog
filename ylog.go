@@ -35,7 +35,6 @@ var levelNames = []string{
 type yesLogger struct {
 	level     LogLevel
 	writer    LoggerWriter
-	formatter LoggerFormatter
 	pipe      chan *logEntry
 	cacheSize int
 	errFile   *os.File
@@ -54,8 +53,7 @@ type logEntry struct {
 func NewYesLogger(opts ...Option) (logger *yesLogger) {
 	logger = &yesLogger{}
 	logger.pipe = make(chan *logEntry, runtime.NumCPU())
-	logger.writer = NewFileWriter("logs")
-	logger.formatter = NewTextFormatter()
+	logger.writer = NewFileWriter("logs", NewTextFormatter())
 
 	for _, opt := range opts {
 		opt(logger)
@@ -77,6 +75,7 @@ func (l *yesLogger) Sync() {
 	close(l.sync)
 }
 
+// Set the log level used by the current ylog instance.
 func (l *yesLogger) SetLevel(level LogLevel) {
 	l.level = level
 }
@@ -164,15 +163,10 @@ func (l *yesLogger) send(calldepth int, lev LogLevel, s string) {
 }
 
 func (l *yesLogger) write() {
-	var buf []byte
 	for {
 		select {
 		case entry := <-l.pipe:
-			// reuse the slice memory
-			buf = buf[:0]
-			l.formatter.Format(entry, &buf)
-			l.writer.Ensure(entry)
-			err := l.writer.Write(buf)
+			err := l.writer.Write(entry)
 			if err != nil {
 				l.writeError(err)
 			}

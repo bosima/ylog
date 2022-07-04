@@ -22,9 +22,3 @@ func Writer(writer LoggerWriter) Option {
 		logger.writer = writer
 	}
 }
-
-func Formatter(formatter LoggerFormatter) Option {
-	return func(logger *yesLogger) {
-		logger.formatter = formatter
-	}
-}

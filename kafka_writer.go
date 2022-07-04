@@ -10,17 +10,31 @@ type kafkaWriter struct {
 	Address   string
 	writer    *kafka.Writer
 	batchSize int
+	formatter LoggerFormatter
 }
 
-func NewKafkaWriter(address string, topic string, batchSize int) LoggerWriter {
+func NewKafkaWriter(address string, topic string, batchSize int, formatter LoggerFormatter) LoggerWriter {
 	return &kafkaWriter{
 		Address:   address,
 		Topic:     topic,
 		batchSize: batchSize,
+		formatter: formatter,
 	}
 }
 
-func (w *kafkaWriter) Ensure(_ *logEntry) (err error) {
+func (w *kafkaWriter) Write(entry *logEntry) (err error) {
+	w.ensure(entry)
+
+	var buf []byte
+	w.formatter.Format(entry, &buf)
+
+	err = w.writer.WriteMessages(context.Background(),
+		kafka.Message{Value: buf},
+	)
+	return
+}
+
+func (w *kafkaWriter) ensure(_ *logEntry) (err error) {
 	if w.writer == nil {
 		w.writer = &kafka.Writer{
 			Addr:      kafka.TCP(w.Address),
@@ -30,16 +44,6 @@ func (w *kafkaWriter) Ensure(_ *logEntry) (err error) {
 		}
 	}
 
-	return
-}
-
-func (w *kafkaWriter) Write(buf []byte) (err error) {
-	// buf will be reused by ylog when this method return,
-	// with aysnc write, we need copy data to a new slice
-	kbuf := append([]byte(nil), buf...)
-	err = w.writer.WriteMessages(context.Background(),
-		kafka.Message{Value: kbuf},
-	)
 	return
 }
 

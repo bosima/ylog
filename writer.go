@@ -1,8 +1,7 @@
 package ylog
 
 type LoggerWriter interface {
-	Ensure(*logEntry) error
-	Write([]byte) error
+	Write(entry *logEntry) error
 	Sync() error
 	Close() error
 }

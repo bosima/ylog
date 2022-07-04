@@ -7,16 +7,38 @@ import (
 )
 
 type fileWriter struct {
-	file     *os.File
-	lastHour int64
-	Path     string
+	lastHour  int64
+	file      *os.File
+	formatter LoggerFormatter
+	Path      string
+	buf       []byte
 }
 
-func NewFileWriter(path string) LoggerWriter {
-	return &fileWriter{Path: path}
+func NewFileWriter(path string, formatter LoggerFormatter) LoggerWriter {
+	return &fileWriter{Path: path, formatter: formatter}
 }
 
-func (w *fileWriter) Ensure(entry *logEntry) (err error) {
+func (w *fileWriter) Write(entry *logEntry) (err error) {
+	w.ensure(entry)
+
+	// reuse the slice memory
+	w.buf = w.buf[:0]
+	w.formatter.Format(entry, &w.buf)
+	w.buf = append(w.buf, '\n')
+
+	_, err = w.file.Write(w.buf)
+	return
+}
+
+func (w *fileWriter) Sync() error {
+	return w.file.Sync()
+}
+
+func (w *fileWriter) Close() error {
+	return w.file.Close()
+}
+
+func (w *fileWriter) ensure(entry *logEntry) (err error) {
 	if w.file == nil {
 		f, err := w.createFile(w.Path, entry.Ts)
 		if err != nil {
@@ -39,20 +61,6 @@ func (w *fileWriter) Ensure(entry *logEntry) (err error) {
 	}
 
 	return
-}
-
-func (w *fileWriter) Write(buf []byte) (err error) {
-	buf = append(buf, '\n')
-	_, err = w.file.Write(buf)
-	return
-}
-
-func (w *fileWriter) Sync() error {
-	return w.file.Sync()
-}
-
-func (w *fileWriter) Close() error {
-	return w.file.Close()
 }
 
 func (w *fileWriter) createFile(path string, t time.Time) (file *os.File, err error) {

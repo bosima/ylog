@@ -13,7 +13,7 @@ func main() {
 	logger := ylog.NewYesLogger(
 		ylog.CacheSize(runtime.NumCPU()),
 		ylog.Level(ylog.LevelInfo),
-		ylog.Formatter(ylog.NewJsonFormatter()),
+		ylog.Writer(ylog.NewFileWriter("logs", ylog.NewJsonFormatter())),
 	)
 
 	logger.Trace("This is a trace log.")

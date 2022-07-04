@@ -14,36 +14,24 @@ type kafkaSyncWriter struct {
 	batchSize int
 	buf       []kafka.Message
 	lastTime  time.Time
+	formatter LoggerFormatter
 }
 
-func NewKafkaSyncWriter(address string, topic string, batchSize int) LoggerWriter {
+func NewKafkaSyncWriter(address string, topic string, batchSize int, formatter LoggerFormatter) LoggerWriter {
 	return &kafkaSyncWriter{
 		Address:   address,
 		Topic:     topic,
 		batchSize: batchSize,
+		formatter: formatter,
 	}
 }
 
-func (w *kafkaSyncWriter) Ensure(_ *logEntry) (err error) {
-	if w.writer == nil {
-		w.buf = make([]kafka.Message, 0, w.batchSize)
+func (w *kafkaSyncWriter) Write(entry *logEntry) (err error) {
+	w.ensure(entry)
 
-		w.writer = &kafka.Writer{
-			Addr:      kafka.TCP(w.Address),
-			Topic:     w.Topic,
-			BatchSize: 1,
-			Async:     true,
-		}
-	}
-
-	return
-}
-
-func (w *kafkaSyncWriter) Write(buf []byte) (err error) {
-
-	// buf will be reused by ylog, so need copy to a new slice
-	kbuf := append([]byte(nil), buf...)
-	w.buf = append(w.buf, kafka.Message{Value: kbuf})
+	var buf []byte
+	w.formatter.Format(entry, &buf)
+	w.buf = append(w.buf, kafka.Message{Value: buf})
 
 	now := time.Now()
 	if now.UnixMilli()-w.lastTime.UnixMilli() > 1000 {
@@ -62,6 +50,21 @@ func (w *kafkaSyncWriter) Write(buf []byte) (err error) {
 		w.buf = w.buf[:0]
 		w.lastTime = now
 	}
+	return
+}
+
+func (w *kafkaSyncWriter) ensure(_ *logEntry) (err error) {
+	if w.writer == nil {
+		w.buf = make([]kafka.Message, 0, w.batchSize)
+
+		w.writer = &kafka.Writer{
+			Addr:      kafka.TCP(w.Address),
+			Topic:     w.Topic,
+			BatchSize: 1,
+			Async:     true,
+		}
+	}
+
 	return
 }
 
