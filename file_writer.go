@@ -73,7 +73,7 @@ func (w *fileWriter) createFile(path string, t time.Time) (file *os.File, err er
 	}
 
 	filePath := filepath.Join(dir, w.getFileName(t)+".txt")
-	file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err = os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.ModeAppend|0644)
 	return
 }
 
